@@ -31,6 +31,24 @@ const firebaseConfig = {
 };
 /* ══════════════════════════════════════════════ */
 
+// ⚠️ CONFIG CHECK — shows a visible warning if you forgot to fill in Firebase keys
+if(firebaseConfig.apiKey === 'YOUR_API_KEY'){
+  document.addEventListener('DOMContentLoaded',()=>{
+    const warn = document.createElement('div');
+    warn.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(10,5,20,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:monospace;padding:30px;text-align:center;';
+    warn.innerHTML=`
+      <div style="font-size:2rem;">🔥</div>
+      <div style="font-size:1.1rem;color:#e8c97a;font-weight:bold;">Firebase Config Not Set</div>
+      <div style="font-size:.85rem;color:#9890b0;max-width:400px;line-height:1.7;">
+        Open the HTML file and replace the <span style="color:#b8a4e8;">YOUR_API_KEY</span>, 
+        <span style="color:#b8a4e8;">YOUR_PROJECT_ID</span> etc. with your real Firebase config values.<br><br>
+        Find them at:<br>
+        <span style="color:#7ecfc4;">console.firebase.google.com → Your Project → Project Settings → Your Apps</span>
+      </div>
+    `;
+    document.body.appendChild(warn);
+  });
+}
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
@@ -196,6 +214,8 @@ async function doRegister(){
   clearErr('rg-err');
   if(!name||!email||!pass){showErr('rg-err','Please fill in all fields');return;}
   if(pass.length<6){showErr('rg-err','Password must be 6+ characters');return;}
+  const btn=document.querySelector('#auth-register .lc-btn');
+  btn.textContent='Creating…';btn.disabled=true;
   try{
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
     await cred.user.updateProfile({displayName: name});
@@ -207,7 +227,9 @@ async function doRegister(){
     });
     sakuraBurst(window.innerWidth/2, window.innerHeight/2);
   } catch(e){
-    showErr('rg-err', friendlyAuthErr(e.code));
+    console.error('Register error:',e);
+    showErr('rg-err', friendlyAuthErr(e.code)||e.message);
+    btn.textContent='Create Account ✦';btn.disabled=false;
   }
 }
 async function doLogin(){
@@ -215,10 +237,14 @@ async function doLogin(){
   const pass = document.getElementById('li-pass').value;
   clearErr('li-err');
   if(!email||!pass){showErr('li-err','Please fill in all fields');return;}
+  const btn=document.querySelector('#auth-login .lc-btn');
+  btn.textContent='Entering…';btn.disabled=true;
   try{
     await auth.signInWithEmailAndPassword(email, pass);
   } catch(e){
-    showErr('li-err', friendlyAuthErr(e.code));
+    console.error('Login error:',e);
+    showErr('li-err', friendlyAuthErr(e.code)||e.message);
+    btn.textContent='Enter the Realm ✦';btn.disabled=false;
   }
 }
 async function doLogout(){
